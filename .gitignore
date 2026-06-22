@@ -1,0 +1,43 @@
+# ============================================================
+#  SECRETS & LIVE FINANCIAL DATA — NEVER COMMIT THESE
+# ============================================================
+# Plaid keys, bank credentials
+.env
+
+# Local MCP tooling config — contains a personal Figma API token
+mcp_config.json
+
+# The ENTIRE data directory holds real transactions, Plaid access
+# tokens, backups and uploaded bank CSVs. The app recreates the
+# folders it needs on first run, so it's safe to ignore wholesale.
+data/
+
+# Real financial data sitting in the repo root
+master_transactions.csv
+legacy_categories.xlsx
+
+# Giant local code dump — not needed to run the app
+budget_bot_code.txt
+
+# Personal experiments / one-off scripts
+scratch/
+
+# ============================================================
+#  Python
+# ============================================================
+__pycache__/
+*.pyc
+.venv/
+
+# ============================================================
+#  Node / frontend
+# ============================================================
+frontend/node_modules/
+frontend/dist/
+
+# ============================================================
+#  Editor / OS
+# ============================================================
+.claude/
+.DS_Store
+Thumbs.db

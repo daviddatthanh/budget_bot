@@ -1,0 +1,532 @@
+/* App-level styles & Modern Fintech Design System */
+
+#root {
+  max-width: 100%;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* =========================================================
+   Animations & Transition Curves (Sleek Spring Physics)
+   ========================================================= */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes floatBlobOne {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+@keyframes floatBlobTwo {
+  0% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(-40px, 40px) scale(1.15); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-slide-up {
+  animation: slideInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-slide-right {
+  animation: slideInRight 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Indeterminate top loading bar */
+@keyframes loadingBar {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(420%); }
+}
+.animate-loading-bar {
+  animation: loadingBar 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Global transitions across interactive nodes */
+*, *::before, *::after {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, backdrop-filter;
+  transition-duration: 250ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Sticky sidebar smooth scroll behavior */
+.sticky-sidebar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sticky-sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+/* =========================================================
+   Atmospheric Mesh Blurs & Dynamic Backgrounds
+   ========================================================= */
+
+.app-bg {
+  position: relative;
+  background-color: #e9edf3;
+  min-height: 100vh;
+  z-index: 1;
+}
+
+.dark .app-bg {
+  background-color: #020617;
+}
+
+/* Moving backdrop glass-blobs */
+.app-bg::before,
+.app-bg::after {
+  content: "";
+  position: absolute;
+  width: 450px;
+  height: 450px;
+  border-radius: 50%;
+  filter: blur(120px);
+  z-index: -1;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.app-bg::before {
+  top: -10%;
+  left: -5%;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.25) 0%, rgba(56, 189, 248, 0.05) 70%);
+  animation: floatBlobOne 25s infinite ease-in-out;
+}
+
+.app-bg::after {
+  bottom: 10%;
+  right: -5%;
+  background: radial-gradient(circle, rgba(20, 184, 166, 0.2) 0%, rgba(16, 185, 129, 0.03) 70%);
+  animation: floatBlobTwo 22s infinite ease-in-out;
+}
+
+.dark .app-bg::before {
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.18) 0%, rgba(56, 189, 248, 0.02) 70%);
+}
+
+.dark .app-bg::after {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, rgba(20, 184, 166, 0.02) 70%);
+}
+
+/* =========================================================
+   Premium Glassmorphic Surfaces & Cards
+   ========================================================= */
+
+/* Translucent panel with multi-layer shadow and white inner glow */
+.panel {
+  position: relative;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 1.25rem;
+  box-shadow: 
+    0 1px 2px 0 rgba(15, 23, 42, 0.02),
+    0 4px 16px 0 rgba(15, 23, 42, 0.03),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+  overflow: hidden;
+}
+
+.dark .panel {
+  background: rgba(17, 24, 39, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 
+    0 1px 3px 0 rgba(0, 0, 0, 0.4),
+    0 8px 30px 0 rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.panel:hover {
+  border-color: rgba(14, 165, 233, 0.25);
+  box-shadow: 
+    0 1px 2px 0 rgba(15, 23, 42, 0.02),
+    0 10px 25px -5px rgba(14, 165, 233, 0.05),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.85);
+}
+
+.dark .panel:hover {
+  border-color: rgba(14, 165, 233, 0.35);
+  box-shadow: 
+    0 1px 3px 0 rgba(0, 0, 0, 0.4),
+    0 12px 36px 0 rgba(0, 0, 0, 0.45),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* KPI Flat Card Styles */
+.kpi-card {
+  background: #fbfcfe;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03);
+}
+
+.dark .kpi-card {
+  background: rgba(17, 24, 39, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  box-shadow: 
+    0 4px 20px -2px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.03);
+}
+
+/* Hover lift effect with structural transform adjustments */
+.hover-lift {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 12px 24px -6px rgba(15, 23, 42, 0.08),
+    0 4px 10px -4px rgba(15, 23, 42, 0.04);
+}
+
+.dark .hover-lift:hover {
+  box-shadow: 
+    0 16px 36px -8px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+}
+
+/* =========================================================
+   Active Card Glow Accents (Fintech Atmosphere)
+   ========================================================= */
+
+.glow-emerald:hover {
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 12px 28px -8px rgba(16, 185, 129, 0.15);
+}
+.dark .glow-emerald:hover {
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 14px 32px -8px rgba(16, 185, 129, 0.22), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+.glow-rose:hover {
+  border-color: rgba(244, 63, 94, 0.4);
+  box-shadow: 0 12px 28px -8px rgba(244, 63, 94, 0.13);
+}
+.dark .glow-rose:hover {
+  border-color: rgba(244, 63, 94, 0.5);
+  box-shadow: 0 14px 32px -8px rgba(244, 63, 94, 0.22), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+.glow-sky:hover {
+  border-color: rgba(14, 165, 233, 0.4);
+  box-shadow: 0 12px 28px -8px rgba(14, 165, 233, 0.15);
+}
+.dark .glow-sky:hover {
+  border-color: rgba(14, 165, 233, 0.5);
+  box-shadow: 0 14px 32px -8px rgba(14, 165, 233, 0.22), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+/* =========================================================
+   Typography, Monospaces & Forms
+   ========================================================= */
+
+.tnum {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Modern Select overrides */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.25em auto;
+  padding-right: 2rem !important;
+}
+
+.dark select {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+}
+
+/* =========================================================
+   Custom Scrollbars (Highly Styled)
+   ========================================================= */
+
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+}
+
+.thin-scroll::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.35);
+  border-radius: 10px;
+}
+
+.thin-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(14, 165, 233, 0.6);
+}
+
+.dark .thin-scroll::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.5);
+}
+
+.dark .thin-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.7);
+}
+
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* =========================================================
+   Custom UI Detail Overlays & Card Effects
+   ========================================================= */
+
+.metallic-card {
+  position: relative;
+  background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%);
+  border-radius: 1rem;
+  box-shadow: 
+    0 15px 35px -10px rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.metallic-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(35deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 50%, rgba(0,0,0,0.08) 100%);
+  z-index: 1;
+}
+
+.card-shine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 80% 20%, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 60%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Animated File Dropzone with Pulse Dash */
+.dropzone-dash {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='none' rx='16' ry='16' stroke='%230ea5e9' stroke-width='2.2' stroke-dasharray='8%2c 6' stroke-dashoffset='0' stroke-linecap='square'/%3E%3C/svg%3E");
+  animation: dropzonePulse 15s linear infinite;
+}
+
+@keyframes dropzonePulse {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+/* Custom visual table styles */
+table tr {
+  transition: background-color 0.15s ease, opacity 0.25s ease;
+}
+
+/* =========================================================
+   Skeleton shimmer (loading placeholders)
+   ========================================================= */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.15);
+}
+.dark .skeleton {
+  background: rgba(255, 255, 255, 0.05);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.18), transparent);
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+.dark .skeleton::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+}
+@keyframes skeletonShimmer {
+  100% { transform: translateX(100%); }
+}
+
+/* =========================================================
+   Motion Layer 2.0 — Choreography & Micro-interactions
+   A cohesive, modern motion system layered on top of the
+   existing design language. All effects are reduced-motion safe.
+   ========================================================= */
+
+/* --- Staggered entrance: children cascade in instead of popping all at once --- */
+.stagger-children > * {
+  animation: slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.stagger-children > *:nth-child(1)  { animation-delay: 0.03s; }
+.stagger-children > *:nth-child(2)  { animation-delay: 0.07s; }
+.stagger-children > *:nth-child(3)  { animation-delay: 0.11s; }
+.stagger-children > *:nth-child(4)  { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(5)  { animation-delay: 0.19s; }
+.stagger-children > *:nth-child(6)  { animation-delay: 0.23s; }
+.stagger-children > *:nth-child(7)  { animation-delay: 0.27s; }
+.stagger-children > *:nth-child(8)  { animation-delay: 0.31s; }
+.stagger-children > *:nth-child(9)  { animation-delay: 0.35s; }
+.stagger-children > *:nth-child(n+10) { animation-delay: 0.39s; }
+
+/* --- Tactile press feedback on every real button (scale-down on press) --- */
+button:not(:disabled):not([aria-disabled="true"]):active {
+  transform: scale(0.97);
+}
+
+/* --- Spring "pop" entrance for modals / popovers (overshoot easing) --- */
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.95); }
+  to   { opacity: 1; transform: none; }
+}
+.animate-pop {
+  animation: popIn 0.34s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* --- Soft scale-in for emphasis (badges, score rings) --- */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in {
+  animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* --- Sweeping light "sheen" on primary CTAs (opt-in via .btn-shine) --- */
+.btn-shine { position: relative; overflow: hidden; isolation: isolate; }
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: translateX(-180%) skewX(-18deg);
+  pointer-events: none;
+  z-index: 1;
+}
+@keyframes btnSheen {
+  to { transform: translateX(320%) skewX(-18deg); }
+}
+.btn-shine:hover::after { animation: btnSheen 0.85s ease; }
+
+/* --- Panel top hairline highlight for crisper glass edges --- */
+.panel::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85), transparent);
+  pointer-events: none;
+  z-index: 2;
+}
+.dark .panel::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+}
+
+/* --- Richer hover-lift (slightly more travel + brand-tinted shadow) --- */
+.hover-lift:hover {
+  transform: translateY(-3px);
+}
+
+/* --- Gentle floating idle animation (opt-in via .animate-float) --- */
+@keyframes floatIdle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.animate-float { animation: floatIdle 4s ease-in-out infinite; }
+
+/* --- Brand gradient text utility --- */
+.gradient-text {
+  background: linear-gradient(120deg, #0ea5e9, #14b8a6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* =========================================================
+   Accessibility — Visible Keyboard Focus (brand ring)
+   Many controls use outline-none; restore a clear, on-brand
+   focus indicator for keyboard users only (not mouse clicks).
+   ========================================================= */
+:where(a, button, select, input, textarea, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid rgba(14, 165, 233, 0.9) !important;
+  outline-offset: 2px !important;
+  border-radius: 6px;
+}
+
+.dark :where(a, button, select, input, textarea, [role="button"], [tabindex]):focus-visible {
+  outline-color: rgba(56, 189, 248, 0.95) !important;
+}
+
+/* =========================================================
+   Respect prefers-reduced-motion (WCAG 2.3.3)
+   ========================================================= */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .app-bg::before,
+  .app-bg::after,
+  .animate-float {
+    animation: none !important;
+  }
+  /* No tactile scale jump when motion is reduced */
+  button:not(:disabled):active { transform: none !important; }
+}

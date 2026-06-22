@@ -1,0 +1,40 @@
+@import "tailwindcss";
+/* Fonts (Plus Jakarta Sans + JetBrains Mono) are loaded via a preconnected <link> in index.html */
+
+/* Override the dark variant to use the .dark class (Tailwind v4) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+body {
+  font-family: var(--font-sans) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #e9edf3;
+  color: #0f172a;
+  overflow-x: hidden;
+}
+
+.dark body {
+  background-color: #020617;
+  color: #f9fafb;
+}
+
+/* Global smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Beautiful modern selection styles */
+::selection {
+  background-color: rgba(14, 165, 233, 0.2);
+  color: #0284c7;
+}
+
+.dark ::selection {
+  background-color: rgba(14, 165, 233, 0.35);
+  color: #38bdf8;
+}
