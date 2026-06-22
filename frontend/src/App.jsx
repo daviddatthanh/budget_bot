@@ -435,7 +435,7 @@ export default function App() {
       const result = await response.json();
       if (result.status === "success") {
         setSettings(updatedSettings);
-        fetchDashboardData();
+        refreshAnalytics();
       } else {
         notify("Failed to save settings: " + result.message, 'error');
       }
@@ -505,7 +505,7 @@ export default function App() {
       }
       
       notify(`Statement ingested into the "${bank.name}" slot.`, 'success');
-      fetchDashboardData();
+      refreshAnalytics();
       setActiveTab('Executive Dashboard');
     } catch (error) {
       console.error("Upload error for slot:", error);
@@ -553,7 +553,7 @@ export default function App() {
       if (result.status === 'error') throw new Error(result.message);
       if (result.added > 0) {
         notify(`Synced ${result.added} new transaction(s) from your banks.`, 'success');
-        fetchDashboardData();
+        refreshAnalytics();
       } else {
         notify('Banks are up to date — no new transactions.', 'info');
       }
@@ -700,7 +700,7 @@ export default function App() {
       const result = await response.json();
       if (result.status === "success") {
         await fetchLedgerData();
-        fetchDashboardData();
+        refreshAnalytics();
       } else {
         notify("Failed to dismiss suggestion: " + result.message, 'error');
       }
@@ -792,7 +792,7 @@ export default function App() {
       const result = await response.json();
       if (result.status === "success") {
         setCategorizedData(prev => prev.map(item => item.id === id ? { ...item, category: category } : item));
-        fetchDashboardData();
+        refreshAnalytics();
         fetchLedgerData();
       } else {
         notify("Failed to update category: " + result.message, 'error');
@@ -822,7 +822,7 @@ export default function App() {
         notify(result.message || `Recategorized to ${chargeMenu.category}.`, 'success');
         setChargeMenu(null);
         fetchSubscriptions();
-        fetchDashboardData();
+        refreshAnalytics();
       } else {
         notify(result.message || 'Update failed.', 'error');
       }
@@ -862,7 +862,7 @@ export default function App() {
         notify(result.message, 'success');
         fetchConflicts();
         fetchLedgerData();
-        fetchDashboardData();
+        refreshAnalytics();
       } else {
         notify("Failed to resolve conflict: " + result.message, 'error');
       }
@@ -936,7 +936,7 @@ export default function App() {
       if (result.status === "success") {
         notify(result.message, 'success');
         fetchDuplicates();
-        fetchDashboardData();
+        refreshAnalytics();
       } else {
         notify(result.message || "Removal failed.", result.status === 'info' ? 'info' : 'error');
       }
@@ -985,7 +985,7 @@ export default function App() {
       const result = await response.json();
       if (result.status === "success") {
         await fetchLedgerData();
-        fetchDashboardData();
+        refreshAnalytics();
         setWizardExclusions({});
         setWizardOverrides({});
       } else {
@@ -1008,7 +1008,7 @@ export default function App() {
       const result = await response.json();
       if (result.status === "success" || result.status === "info") {
         notify(result.message, 'success');
-        fetchDashboardData();
+        refreshAnalytics();
         fetchLedgerData();
         fetchConflicts();
         setActiveTab('AI Ledger');
@@ -1125,8 +1125,7 @@ export default function App() {
         notify(result.message, 'success');
         setNewRule(prev => ({ ...blankRule, keyword: prev.keyword }));
         fetchSmartRules();
-        fetchDashboardData();
-        fetchHealthScore();
+        refreshAnalytics();
         searchTransactionsForRules(ruleSearch);
       } else {
         notify(result.message || "Failed to save rule.", 'error');
@@ -1158,8 +1157,7 @@ export default function App() {
       const result = await response.json();
       notify(result.message, 'success');
       fetchSmartRules();
-      fetchDashboardData();
-      fetchHealthScore();
+      refreshAnalytics();
     } catch (err) {
       console.error("Apply rules error", err);
       notify("Error applying rules.", 'error');
@@ -1211,6 +1209,15 @@ export default function App() {
     } finally {
       setIsLoadingDashboard(false);
     }
+  };
+
+  // Refresh every derived view after the underlying data changes, so counters
+  // like the Roth IRA contribution and the health score update immediately —
+  // without needing a manual page reload.
+  const refreshAnalytics = () => {
+    fetchDashboardData();
+    fetchHealthScore();
+    fetchWealthInsights();
   };
 
   useEffect(() => {
