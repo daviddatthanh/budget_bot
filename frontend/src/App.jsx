@@ -1290,11 +1290,11 @@ export default function App() {
           <div className="relative group">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-sky-500 to-sky-600 rounded-xl blur opacity-25 group-hover:opacity-75 transition duration-500"></div>
             <div className="relative w-9 h-9 bg-gradient-to-br from-sky-500 to-sky-600 rounded-xl flex items-center justify-center text-white font-black text-base shadow-lg ring-1 ring-white/10">
-              B
+              W
             </div>
           </div>
           <div className="leading-tight hidden sm:block">
-            <span className="block bg-gradient-to-r from-sky-500 to-sky-500 bg-clip-text text-transparent font-black tracking-tight text-[15px]">Budget Bot</span>
+            <span className="block bg-gradient-to-r from-sky-500 to-sky-500 bg-clip-text text-transparent font-black tracking-tight text-[15px]">Wally</span>
             <span className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-[0.18em]">Your money, at a glance</span>
           </div>
         </div>
