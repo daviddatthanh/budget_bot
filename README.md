@@ -50,6 +50,12 @@ browser. Press **Ctrl+C** in the terminal to stop everything.
 Once it's running, open **http://localhost:5173** (it opens on its own the first
 time).
 
+### Launch it like a real app (Windows)
+
+Double-click **`Add Wally to Start Menu.bat`** once. After that, press the
+**Windows key**, type **"Wally"**, and hit Enter to launch it — no terminal or
+folder digging required. The shortcut uses the Wally logo as its icon.
+
 ---
 
 ## Adding your data
