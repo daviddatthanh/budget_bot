@@ -81,7 +81,8 @@ dashboard at **http://localhost:5173**. Press **Ctrl+C** to stop.
 Double-click **`Add Wally to Start Menu.bat`** once. From then on, just press the
 **Windows key**, type **“Wally”**, and hit **Enter** — it launches **silently in
 the background** (no console window) with the Wally icon, and the dashboard opens
-in your browser. To shut it down, search **“Stop Wally”** the same way.
+in your browser. **Just close the browser tab when you're done** — Wally notices
+and shuts itself down automatically, so nothing keeps running in the background.
 
 ---
 

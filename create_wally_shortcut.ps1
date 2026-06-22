@@ -1,5 +1,6 @@
-# Adds "Wally" and "Stop Wally" shortcuts to your Start Menu so you can press the
-# Windows key, type "Wally", and launch it silently (no console window).
+# Adds a "Wally" shortcut to your Start Menu so you can press the Windows key,
+# type "Wally", and launch it silently (no console window). Wally stops on its
+# own when you close the browser, so there's no separate stop shortcut.
 # Run "Add Wally to Start Menu.bat" to use this.
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $programs = [Environment]::GetFolderPath('Programs')
@@ -23,15 +24,12 @@ $run.IconLocation = $icon
 $run.Description = 'Wally - Personal Finance Command Center'
 $run.Save()
 
-$stop = $ws.CreateShortcut((Join-Path $programs 'Stop Wally.lnk'))
-$stop.TargetPath = $pyw
-$stop.Arguments = 'stop.py'
-$stop.WorkingDirectory = $root
-$stop.IconLocation = $icon
-$stop.Description = 'Stop Wally (shut down the servers)'
-$stop.Save()
+# Remove the old "Stop Wally" shortcut if a previous version created one —
+# Wally now stops by itself when you close the browser.
+$old = Join-Path $programs 'Stop Wally.lnk'
+if (Test-Path $old) { Remove-Item $old -Force }
 
 Write-Host ""
-Write-Host "Added to Start Menu:"
-Write-Host "  - Wally       (press Windows key, type 'Wally', Enter)"
-Write-Host "  - Stop Wally  (to shut it down)"
+Write-Host "Added 'Wally' to the Start Menu."
+Write-Host "Press the Windows key, type 'Wally', and hit Enter to launch."
+Write-Host "It stops on its own when you close the browser."

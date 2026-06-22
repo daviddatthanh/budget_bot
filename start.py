@@ -134,6 +134,10 @@ def wait_for_backend(timeout=40):
 def main():
     os.chdir(ROOT)
 
+    # Child processes inherit this; the backend uses it to enable browser-close
+    # auto-shutdown (it stops itself once every dashboard tab is closed).
+    os.environ["WALLY_AUTOSHUTDOWN"] = "1"
+
     # Already running? Just open the dashboard and exit. This keeps the silent
     # Start Menu launcher from stacking duplicate servers on repeat clicks.
     if wait_for_backend(timeout=1):
@@ -166,15 +170,14 @@ def main():
         banner("Wally is running")
         print(f"  Dashboard:  {DASHBOARD_URL}   (opens automatically)")
         print(f"  API:        http://127.0.0.1:8000")
-        print("\n  Press Ctrl+C in this window to stop everything.\n")
+        print("\n  Close the browser to stop Wally, or press Ctrl+C here.\n")
 
-        # Keep running until the user interrupts or a server dies.
-        while True:
-            if backend.poll() is not None:
-                fail("The backend stopped unexpectedly. Scroll up for the error.")
-            if frontend.poll() is not None:
-                fail("The dashboard stopped unexpectedly. Scroll up for the error.")
+        # Runs until you close the dashboard (the backend shuts itself down and
+        # this loop notices), you press Ctrl+C, or a server exits on its own.
+        while backend.poll() is None and frontend.poll() is None:
             time.sleep(1)
+
+        banner("Shutting down Wally")
 
     except KeyboardInterrupt:
         banner("Shutting down Wally")

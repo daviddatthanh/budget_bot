@@ -58,6 +58,51 @@ import tempfile
 # read-modify-write and lose each other's changes.
 _write_lock = threading.RLock()
 
+
+# ---------------------------------------------------------------------------
+# Auto-shutdown when the browser closes.
+#
+# When launched by start.py (which sets WALLY_AUTOSHUTDOWN=1), the open dashboard
+# pings /api/heartbeat every few seconds. If every browser tab closes the pings
+# stop, and after a short grace period we shut the server down so nothing lingers
+# in the background. A page refresh only pauses the pings briefly — well within
+# the grace window — so it never triggers a shutdown.
+import time as _time
+import logging as _logging
+
+_HEARTBEAT = {"last": None, "started": _time.time()}
+_HEARTBEAT_GRACE = int(os.environ.get("WALLY_HEARTBEAT_GRACE", "15"))  # silence -> shut down
+_STARTUP_GRACE = 600    # if no browser ever connects, give up after 10 minutes
+
+
+@app.get("/api/heartbeat")
+def heartbeat():
+    """Pinged by the open dashboard so the server knows a browser is watching."""
+    _HEARTBEAT["last"] = _time.time()
+    return {"ok": True}
+
+
+def _auto_shutdown_watchdog():
+    while True:
+        _time.sleep(3)
+        now = _time.time()
+        last = _HEARTBEAT["last"]
+        if last is None:
+            if now - _HEARTBEAT["started"] > _STARTUP_GRACE:
+                os._exit(0)
+        elif now - last > _HEARTBEAT_GRACE:
+            os._exit(0)
+
+
+if os.environ.get("WALLY_AUTOSHUTDOWN") == "1":
+    # Keep the heartbeat out of the access log so it doesn't spam the console.
+    class _HeartbeatLogFilter(_logging.Filter):
+        def filter(self, record):
+            return "/api/heartbeat" not in record.getMessage()
+
+    _logging.getLogger("uvicorn.access").addFilter(_HeartbeatLogFilter())
+    threading.Thread(target=_auto_shutdown_watchdog, daemon=True).start()
+
 def save_master_df(df, path=MASTER_DB_PATH):
     """Atomically persist the master ledger.
 

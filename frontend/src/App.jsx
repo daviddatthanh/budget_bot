@@ -1226,6 +1226,16 @@ export default function App() {
     fetchWealthInsights();
   }, [startMonth, endMonth, userProfile]);
 
+  // Heartbeat: tells the backend a browser tab is open. When every tab is closed
+  // the pings stop and the backend shuts itself down (see start.py / api.py), so
+  // Wally doesn't keep running after you close the window.
+  useEffect(() => {
+    const beat = () => { fetch(`${API_URL}/heartbeat`).catch(() => {}); };
+    beat();
+    const id = setInterval(beat, 5000);
+    return () => clearInterval(id);
+  }, []);
+
   useEffect(() => {
     fetchTrends();
   }, [userProfile]);
