@@ -1,4 +1,4 @@
-"""Plaid integration service for Budget Bot.
+"""Plaid integration service for Wally.
 
 Handles the full Plaid Link lifecycle so each local profile can connect its own bank
 institutions and pull transactions straight into the shared master ledger:
@@ -112,7 +112,7 @@ def create_link_token(person):
     client = _client()
     kwargs = dict(
         user=LinkTokenCreateRequestUser(client_user_id=str(person or "default")),
-        client_name="Budget Bot",
+        client_name="Wally",
         products=[Products("transactions")],
         country_codes=[CountryCode("US")],
         language="en",
@@ -178,7 +178,7 @@ def exchange_public_token(public_token, person, institution_name=None):
 def _map_transaction(txn, item):
     """Converts one Plaid transaction into a master-ledger row dict.
 
-    Plaid amounts are positive when money LEAVES the account; Budget Bot stores expenses as
+    Plaid amounts are positive when money LEAVES the account; Wally stores expenses as
     negative and inflows as positive, so we negate. The existing categorizer/rules engine
     assigns real categories afterwards, so new rows start Uncategorized.
     """

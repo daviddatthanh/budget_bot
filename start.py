@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Budget Bot launcher.
+Wally launcher.
 
 One command to start everything:
 
@@ -121,7 +121,7 @@ def wait_for_backend(timeout=40):
 
 def main():
     os.chdir(ROOT)
-    banner("Budget Bot — starting up")
+    banner("Wally — starting up")
 
     step("Checking Python environment...")
     py = venv_python()
@@ -144,7 +144,7 @@ def main():
         step("Starting dashboard on http://localhost:5173 ...")
         frontend = spawn("npm run dev", cwd=FRONTEND)
 
-        banner("Budget Bot is running")
+        banner("Wally is running")
         print(f"  Dashboard:  {DASHBOARD_URL}   (opens automatically)")
         print(f"  API:        http://127.0.0.1:8000")
         print("\n  Press Ctrl+C in this window to stop everything.\n")
@@ -158,7 +158,7 @@ def main():
             time.sleep(1)
 
     except KeyboardInterrupt:
-        banner("Shutting down Budget Bot")
+        banner("Shutting down Wally")
     finally:
         stop(frontend)
         stop(backend)

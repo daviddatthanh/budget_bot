@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run this to start Budget Bot on macOS or Linux:  ./start.sh
+# Run this to start Wally on macOS or Linux:  ./start.sh
 cd "$(dirname "$0")" || exit 1
 
 if command -v python3 >/dev/null 2>&1; then

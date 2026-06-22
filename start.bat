@@ -1,6 +1,6 @@
 @echo off
-REM Double-click this file to start Budget Bot on Windows.
-title Budget Bot
+REM Double-click this file to start Wally on Windows.
+title Wally
 cd /d "%~dp0"
 
 REM Prefer the Python launcher (py), fall back to python on PATH.

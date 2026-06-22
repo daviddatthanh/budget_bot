@@ -1,4 +1,8 @@
-# Budget Bot — Personal Finance Command Center
+<p align="center">
+  <img src="icon/wally-icon-512.png" width="120" alt="Wally logo" />
+</p>
+
+<h1 align="center">Wally — Personal Finance Command Center</h1>
 
 A self-hosted budgeting dashboard. It ingests your bank/credit-card CSV exports
 (or connects live accounts via Plaid), auto-categorizes transactions with a
@@ -15,7 +19,7 @@ person who uses this runs their own private copy.
   2. IMPORTANT: use sample/blurred numbers, not your real finances.
   3. Save it as docs/screenshot.png and uncomment the line below.
 -->
-<!-- ![Budget Bot dashboard](docs/screenshot.png) -->
+<!-- ![Wally dashboard](docs/screenshot.png) -->
 
 ---
 
