@@ -17,6 +17,7 @@ import time
 import shutil
 import signal
 import subprocess
+import webbrowser
 import urllib.request
 from pathlib import Path
 
@@ -26,6 +27,21 @@ IS_WINDOWS = os.name == "nt"
 
 BACKEND_URL = "http://127.0.0.1:8000/docs"
 DASHBOARD_URL = "http://localhost:5173"
+
+# When launched with pythonw.exe (the silent Start Menu shortcut) there is no
+# console, so sys.stdout/err are None and print() would crash. Route them to the
+# void so the exact same code runs whether the window is visible or hidden.
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w")
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, "w")
+
+
+def _run(cmd, **kw):
+    """subprocess.run that never flashes a console window on Windows."""
+    if IS_WINDOWS:
+        kw.setdefault("creationflags", subprocess.CREATE_NO_WINDOW)
+    return subprocess.run(cmd, check=True, **kw)
 
 
 # --- pretty output -----------------------------------------------------------
@@ -55,15 +71,10 @@ def venv_python():
         return py
 
     step("First run: creating the Python virtual environment (.venv)...")
-    subprocess.run([sys.executable, "-m", "venv", str(ROOT / ".venv")], check=True)
+    _run([sys.executable, "-m", "venv", str(ROOT / ".venv")])
     step("Installing Python dependencies (this can take a minute)...")
-    subprocess.run(
-        [str(py), "-m", "pip", "install", "-q", "--upgrade", "pip"], check=True
-    )
-    subprocess.run(
-        [str(py), "-m", "pip", "install", "-q", "-r", str(ROOT / "requirements.txt")],
-        check=True,
-    )
+    _run([str(py), "-m", "pip", "install", "-q", "--upgrade", "pip"])
+    _run([str(py), "-m", "pip", "install", "-q", "-r", str(ROOT / "requirements.txt")])
     return py
 
 
@@ -75,7 +86,7 @@ def ensure_node():
         )
     if not (FRONTEND / "node_modules").exists():
         step("First run: installing frontend packages (this can take a minute)...")
-        subprocess.run("npm install", cwd=FRONTEND, shell=True, check=True)
+        _run("npm install", cwd=FRONTEND, shell=True)
 
 
 # --- process management ------------------------------------------------------
@@ -85,7 +96,8 @@ def spawn(cmd, cwd):
     if IS_WINDOWS:
         return subprocess.Popen(
             cmd, cwd=cwd, shell=True,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+            | subprocess.CREATE_NO_WINDOW,
         )
     return subprocess.Popen(cmd, cwd=cwd, shell=True, start_new_session=True)
 
@@ -121,6 +133,13 @@ def wait_for_backend(timeout=40):
 
 def main():
     os.chdir(ROOT)
+
+    # Already running? Just open the dashboard and exit. This keeps the silent
+    # Start Menu launcher from stacking duplicate servers on repeat clicks.
+    if wait_for_backend(timeout=1):
+        webbrowser.open(DASHBOARD_URL)
+        return
+
     banner("Wally — starting up")
 
     step("Checking Python environment...")

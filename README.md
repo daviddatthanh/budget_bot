@@ -79,8 +79,9 @@ dashboard at **http://localhost:5173**. Press **Ctrl+C** to stop.
 ### ⭐ Launch it like a real app (Windows)
 
 Double-click **`Add Wally to Start Menu.bat`** once. From then on, just press the
-**Windows key**, type **“Wally”**, and hit **Enter** — it launches with the Wally
-icon, no terminal or folder-digging required.
+**Windows key**, type **“Wally”**, and hit **Enter** — it launches **silently in
+the background** (no console window) with the Wally icon, and the dashboard opens
+in your browser. To shut it down, search **“Stop Wally”** the same way.
 
 ---
 
