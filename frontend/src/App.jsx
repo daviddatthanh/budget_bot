@@ -11,7 +11,7 @@ import {
   Landmark, Activity, Sun, Moon, Search, Repeat, CalendarClock, Info,
   ShieldCheck, ChevronRight, Wand2, LayoutDashboard, Settings as SettingsIcon,
   SlidersHorizontal, ArrowDownUp, ArrowUpRight, ArrowDownRight, BarChart3,
-  FileText, Database, CheckCircle, Copy, Layers, Link2, Building2, Unlink
+  FileText, Database, CheckCircle, Copy, Layers, Link2, Building2, Unlink, KeyRound
 } from 'lucide-react';
 
 // Lazily injects the Plaid Link script once and resolves with window.Plaid.
@@ -517,17 +517,65 @@ export default function App() {
 
   // --- PLAID BANK CONNECTIONS ---
   const [plaidConfigured, setPlaidConfigured] = useState(true);
+  const [plaidStatus, setPlaidStatus] = useState({ environment: 'production', client_id_masked: '', has_secret: false, redirect_uri: '' });
   const [plaidItems, setPlaidItems] = useState([]);
   const [plaidConnecting, setPlaidConnecting] = useState(null); // person currently linking
   const [plaidSyncing, setPlaidSyncing] = useState(false);
+  // In-app Plaid credential entry (replaces hand-editing .env).
+  const [showPlaidConfig, setShowPlaidConfig] = useState(false);
+  const [plaidSavingConfig, setPlaidSavingConfig] = useState(false);
+  const [plaidForm, setPlaidForm] = useState({ client_id: '', secret: '', env: 'production', redirect_uri: '' });
 
   const fetchPlaidStatus = async () => {
     try {
       const res = await fetch(`${API_URL}/plaid/status`);
       const data = await res.json();
       setPlaidConfigured(!!data.configured);
+      setPlaidStatus({
+        environment: data.environment || 'production',
+        client_id_masked: data.client_id_masked || '',
+        has_secret: !!data.has_secret,
+        redirect_uri: data.redirect_uri || '',
+      });
+      // Prefill the form's non-secret fields so editing keeps existing values.
+      setPlaidForm((f) => ({
+        ...f,
+        env: data.environment || 'production',
+        redirect_uri: data.redirect_uri || '',
+      }));
     } catch {
       setPlaidConfigured(false);
+    }
+  };
+
+  const handleSavePlaidConfig = async () => {
+    if (!plaidForm.client_id.trim()) {
+      notify('Enter your Plaid Client ID.', 'error');
+      return;
+    }
+    // Secret is required the first time, but optional when only changing env/redirect.
+    if (!plaidForm.secret.trim() && !plaidStatus.has_secret) {
+      notify('Enter your Plaid Secret.', 'error');
+      return;
+    }
+    setPlaidSavingConfig(true);
+    try {
+      const res = await fetch(`${API_URL}/plaid/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(plaidForm),
+      });
+      const data = await res.json();
+      if (data.status === 'error') throw new Error(data.message);
+      notify('Plaid credentials saved — you can connect a bank now.', 'success');
+      setShowPlaidConfig(false);
+      setPlaidForm((f) => ({ ...f, secret: '' })); // don't keep the secret in memory
+      await fetchPlaidStatus();
+      await fetchPlaidItems();
+    } catch (err) {
+      notify(`Could not save Plaid keys: ${err.message}`, 'error');
+    } finally {
+      setPlaidSavingConfig(false);
     }
   };
 
@@ -559,6 +607,40 @@ export default function App() {
       }
     } catch (err) {
       notify(`Sync failed: ${err.message}`, 'error');
+    } finally {
+      setPlaidSyncing(false);
+    }
+  };
+
+  // Auto-sync Plaid on every app load / page refresh so the ledger is always
+  // current without the user clicking "Sync All Banks". Self-contained (does its
+  // own status/items fetch to avoid state-timing races) and stays silent unless
+  // it actually pulls something in — no toast on every refresh when up to date.
+  const autoSyncPlaid = async () => {
+    try {
+      const statusRes = await fetch(`${API_URL}/plaid/status`);
+      const status = await statusRes.json();
+      if (!status.configured) return;
+      const itemsRes = await fetch(`${API_URL}/plaid/items`);
+      const itemsData = await itemsRes.json();
+      if (!(itemsData.status === 'success' && (itemsData.items || []).length > 0)) return;
+
+      setPlaidSyncing(true);
+      const res = await fetch(`${API_URL}/plaid/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ person: null }),
+      });
+      const result = await res.json();
+      if (result.status === 'error') throw new Error(result.message);
+      if (result.added > 0) {
+        notify(`Auto-synced ${result.added} new transaction(s) from your banks.`, 'success');
+        refreshAnalytics();
+      }
+    } catch (err) {
+      // Quiet failure — don't nag on every page load; the manual Sync button
+      // surfaces real errors when the user explicitly asks for a sync.
+      console.warn('Plaid auto-sync skipped:', err?.message || err);
     } finally {
       setPlaidSyncing(false);
     }
@@ -632,6 +714,11 @@ export default function App() {
     fetchSettings();
     fetchPlaidStatus();
     fetchPlaidItems();
+  }, []);
+
+  // Pull fresh Plaid transactions automatically on each load/refresh.
+  useEffect(() => {
+    autoSyncPlaid();
   }, []);
 
   // Taxonomy save action
@@ -2964,15 +3051,120 @@ export default function App() {
                 </div>
               )}
 
-              {!plaidConfigured ? (
-                <div className="text-center py-12 text-slate-400 dark:text-zinc-500 border-2 border-dashed border-amber-200 dark:border-amber-900/40 rounded-2xl bg-amber-50/40 dark:bg-amber-950/10">
-                  <AlertTriangle size={40} className="mx-auto text-amber-400 mb-3" strokeWidth={1.5}/>
-                  <h3 className="font-bold text-lg text-slate-700 dark:text-zinc-200">Plaid is not configured yet</h3>
-                  <p className="text-xs text-slate-500 dark:text-zinc-400 mt-2 max-w-md mx-auto leading-relaxed">
-                    Add your Plaid keys to the <code className="px-1 py-0.5 rounded bg-slate-200/70 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200">.env</code> file in the project root
-                    (<code className="px-1 py-0.5 rounded bg-slate-200/70 dark:bg-zinc-800">PLAID_CLIENT_ID</code> and <code className="px-1 py-0.5 rounded bg-slate-200/70 dark:bg-zinc-800">PLAID_SECRET</code>),
-                    then restart the backend. See <code className="px-1 py-0.5 rounded bg-slate-200/70 dark:bg-zinc-800">.env.example</code> for the template.
-                  </p>
+              {plaidConfigured && !showPlaidConfig && (
+                <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-slate-200/70 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-900/30 px-5 py-3.5">
+                  <div className="min-w-0 flex items-center gap-2 text-xs text-slate-500 dark:text-zinc-400">
+                    <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0" strokeWidth={2}/>
+                    <span className="font-semibold">
+                      Plaid keys saved · <span className="capitalize">{plaidStatus.environment}</span>
+                      {plaidStatus.client_id_masked ? ` · ${plaidStatus.client_id_masked}` : ''}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setShowPlaidConfig(true)}
+                    className="font-bold py-2 px-4 rounded-xl border text-xs transition-all shadow-sm flex-shrink-0 bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700"
+                  >
+                    Update keys
+                  </button>
+                </div>
+              )}
+
+              {(!plaidConfigured || showPlaidConfig) ? (
+                <div className="rounded-2xl border border-slate-200/70 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/20 p-6">
+                  <div className="flex items-start gap-3 mb-5">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-600 to-blue-500 text-white flex items-center justify-center shadow-sm flex-shrink-0">
+                      <KeyRound size={17} strokeWidth={1.5}/>
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-base text-slate-800 dark:text-zinc-100">
+                        {plaidConfigured ? 'Update Plaid credentials' : 'Connect Plaid'}
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                        Paste your keys from the{' '}
+                        <a href="https://dashboard.plaid.com/developers/keys" target="_blank" rel="noreferrer"
+                           className="font-semibold text-sky-600 dark:text-sky-400 underline">Plaid dashboard</a>.
+                        They're saved securely on this machine and applied instantly — no file editing or restart needed.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 max-w-xl">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 dark:text-zinc-300 mb-1.5">Client ID</label>
+                      <input
+                        type="text"
+                        value={plaidForm.client_id}
+                        onChange={(e) => setPlaidForm((f) => ({ ...f, client_id: e.target.value }))}
+                        placeholder="e.g. 5f9a1c2b3d4e5f6a7b8c9d0e"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm text-slate-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-sky-400/60"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 dark:text-zinc-300 mb-1.5">
+                        Secret {plaidConfigured && plaidStatus.has_secret && <span className="font-normal text-slate-400">(leave blank to keep current)</span>}
+                      </label>
+                      <input
+                        type="password"
+                        value={plaidForm.secret}
+                        onChange={(e) => setPlaidForm((f) => ({ ...f, secret: e.target.value }))}
+                        placeholder={plaidConfigured && plaidStatus.has_secret ? '•••••••• (unchanged)' : 'Your Plaid secret'}
+                        autoComplete="off"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm text-slate-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-sky-400/60"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 dark:text-zinc-300 mb-1.5">Environment</label>
+                        <select
+                          value={plaidForm.env}
+                          onChange={(e) => setPlaidForm((f) => ({ ...f, env: e.target.value }))}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm text-slate-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-sky-400/60"
+                        >
+                          <option value="production">Production (real banks)</option>
+                          <option value="sandbox">Sandbox (test banks)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 dark:text-zinc-300 mb-1.5">
+                          Redirect URI <span className="font-normal text-slate-400">(optional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={plaidForm.redirect_uri}
+                          onChange={(e) => setPlaidForm((f) => ({ ...f, redirect_uri: e.target.value }))}
+                          placeholder="http://localhost:5173"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm text-slate-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-sky-400/60"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-400 dark:text-zinc-500 leading-relaxed">
+                      Redirect URI is only needed for OAuth banks (Chase, Wells Fargo, Capital One…). It must match a URI
+                      registered under Plaid → Team Settings → API → Allowed redirect URIs.
+                    </p>
+
+                    <div className="flex items-center gap-3 pt-1">
+                      <button
+                        onClick={handleSavePlaidConfig}
+                        disabled={plaidSavingConfig}
+                        className={`flex items-center gap-2 font-bold py-2.5 px-5 rounded-xl border text-xs transition-all shadow-md ${
+                          plaidSavingConfig
+                            ? 'bg-slate-100 text-slate-400 dark:text-zinc-500 border-slate-200 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white border-transparent shadow-emerald-200'
+                        }`}
+                      >
+                        {plaidSavingConfig ? <RefreshCw size={14} className="animate-spin" strokeWidth={1.5}/> : <CheckCircle2 size={14} strokeWidth={1.5}/>}
+                        <span>{plaidSavingConfig ? 'Saving…' : 'Save & connect'}</span>
+                      </button>
+                      {plaidConfigured && (
+                        <button
+                          onClick={() => { setShowPlaidConfig(false); setPlaidForm((f) => ({ ...f, secret: '' })); }}
+                          className="font-bold py-2.5 px-5 rounded-xl border text-xs bg-white dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-6">

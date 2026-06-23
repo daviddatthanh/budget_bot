@@ -202,6 +202,13 @@ class PlaidExchangeRequest(BaseModel):
 class PlaidSyncRequest(BaseModel):
     person: Optional[str] = None
 
+class PlaidConfigRequest(BaseModel):
+    client_id: str
+    # Optional so the user can change env/redirect without re-pasting the secret.
+    secret: Optional[str] = ""
+    env: Optional[str] = "production"
+    redirect_uri: Optional[str] = ""
+
 class SmartRuleModel(BaseModel):
     keyword: str
     category: str
@@ -2450,11 +2457,35 @@ def sync_with_excel_history():
 # ----------------------------------------------------------------------------
 @app.get("/api/plaid/status")
 def plaid_status():
-    """Reports whether Plaid credentials are configured and which environment is active."""
-    return {
-        "configured": plaid_service.is_configured(),
-        "environment": (os.environ.get("PLAID_ENV") or "production").lower(),
-    }
+    """Reports whether Plaid credentials are configured, the active environment,
+    and a secret-free view of the saved keys (masked client id, redirect URI)."""
+    return plaid_service.get_config_public()
+
+@app.post("/api/plaid/config")
+def plaid_save_config(req: PlaidConfigRequest):
+    """Saves Plaid credentials entered in the web UI (no .env editing or restart).
+
+    Persists to data/plaid_config.json and applies them to the running process,
+    so 'Connect a bank' works immediately after saving.
+    """
+    try:
+        if not (req.client_id or "").strip():
+            return {"status": "error", "message": "Client ID is required."}
+        public = plaid_service.save_config(
+            client_id=req.client_id,
+            secret=req.secret,
+            env=req.env,
+            redirect_uri=req.redirect_uri,
+        )
+        if not public.get("configured"):
+            return {
+                "status": "error",
+                "message": "Saved, but Plaid still isn't configured — a Secret is required the first time.",
+                **public,
+            }
+        return {"status": "success", "message": "Plaid credentials saved.", **public}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @app.post("/api/plaid/create_link_token")
 def plaid_create_link_token(req: PlaidLinkTokenRequest):

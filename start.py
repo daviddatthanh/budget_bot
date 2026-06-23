@@ -25,6 +25,11 @@ ROOT = Path(__file__).resolve().parent
 FRONTEND = ROOT / "frontend"
 IS_WINDOWS = os.name == "nt"
 
+# Single-instance lock: holds this launcher's PID for as long as Wally runs, so a
+# second launch (e.g. a double click, or the shortcut firing while another copy is
+# mid-startup) opens the browser instead of spawning a duplicate server pair.
+LOCK_PATH = ROOT / ".wally.lock"
+
 BACKEND_URL = "http://127.0.0.1:8000/docs"
 DASHBOARD_URL = "http://localhost:5173"
 
@@ -117,6 +122,61 @@ def stop(proc):
         proc.terminate()
 
 
+def _pid_alive(pid):
+    """True if a process with this PID is running. On Windows we use tasklist
+    rather than os.kill(pid, 0): Python maps os.kill to TerminateProcess for
+    non-CTRL signals on Windows, so os.kill(pid, 0) could actually kill it."""
+    if pid <= 0 or pid == os.getpid():
+        return pid == os.getpid()
+    if IS_WINDOWS:
+        try:
+            out = subprocess.run(
+                ["tasklist", "/FI", f"PID eq {pid}", "/NH"],
+                capture_output=True, text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+            return str(pid) in out.stdout
+        except Exception:
+            return True  # can't tell — assume alive so we don't stomp a live lock
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
+def acquire_lock():
+    """Atomically claim the single-instance lock. Returns True if we own it, or
+    False if another *live* launcher already holds it. A lock left by a crashed
+    run (its PID is gone) is treated as stale and reclaimed."""
+    for _ in range(5):  # bounded retries to resolve a stale-lock race
+        try:
+            fd = os.open(str(LOCK_PATH), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.write(fd, str(os.getpid()).encode())
+            os.close(fd)
+            return True
+        except FileExistsError:
+            try:
+                pid = int((LOCK_PATH.read_text() or "0").strip() or 0)
+            except Exception:
+                pid = 0
+            if pid and pid != os.getpid() and _pid_alive(pid):
+                return False  # another instance is genuinely running/starting
+            try:
+                LOCK_PATH.unlink()  # stale lock from a crashed run — drop and retry
+            except OSError:
+                return False  # someone else grabbed it first; let them win
+    return False
+
+
+def release_lock():
+    """Remove our lock file on shutdown. Only the owning launcher reaches this."""
+    try:
+        LOCK_PATH.unlink()
+    except OSError:
+        pass
+
+
 def wait_for_backend(timeout=40):
     """Poll the backend until it answers, so we open the browser at the right time."""
     deadline = time.time() + timeout
@@ -141,6 +201,12 @@ def main():
     # Already running? Just open the dashboard and exit. This keeps the silent
     # Start Menu launcher from stacking duplicate servers on repeat clicks.
     if wait_for_backend(timeout=1):
+        webbrowser.open(DASHBOARD_URL)
+        return
+
+    # Guard the brief window before the backend answers: if another launcher is
+    # already mid-startup, don't spawn a second server pair — just open the tab.
+    if not acquire_lock():
         webbrowser.open(DASHBOARD_URL)
         return
 
@@ -184,6 +250,7 @@ def main():
     finally:
         stop(frontend)
         stop(backend)
+        release_lock()
         step("Stopped. Bye!")
 
 

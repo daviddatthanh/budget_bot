@@ -10,8 +10,13 @@ holds live banking credentials in plaintext, so it MUST stay out of version cont
 shared drives (see .gitignore). This is acceptable for a self-hosted, single-machine app;
 do not deploy this storage model to a shared/multi-tenant server.
 
-Credentials are read from environment variables (a .env file in the project root is loaded
-automatically):
+Credentials can be set two ways, in priority order:
+    1. The in-app Settings → Bank Connections form, which saves them to
+       data/plaid_config.json (see save_config). This is the recommended path —
+       the user never has to find or edit a file, and changes apply live.
+    2. Environment variables / a .env file in the project root (legacy fallback).
+
+Recognized keys (either source):
     PLAID_CLIENT_ID   - your Plaid client id
     PLAID_SECRET      - your Plaid secret for the chosen environment
     PLAID_ENV         - "production" (default) or "sandbox"
@@ -23,18 +28,53 @@ import os
 import json
 import threading
 
-try:
-    from dotenv import load_dotenv
-    # Load .env from the project root (one level above this core/ file).
-    _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    load_dotenv(os.path.join(_PROJECT_ROOT, ".env"), override=True)
-except Exception:
-    pass
-
 # --- Storage --------------------------------------------------------------------------
 DATA_ROOT = "data"
 ITEMS_PATH = os.path.join(DATA_ROOT, "plaid_items.json")
+CONFIG_PATH = os.path.join(DATA_ROOT, "plaid_config.json")
 _items_lock = threading.RLock()
+_config_lock = threading.RLock()
+
+# Keys mirrored between data/plaid_config.json and os.environ.
+_CONFIG_ENV_KEYS = ("PLAID_CLIENT_ID", "PLAID_SECRET", "PLAID_ENV", "PLAID_REDIRECT_URI")
+
+
+def _load_config_file():
+    """Reads data/plaid_config.json (the UI-saved credentials). Returns {} if absent."""
+    if not os.path.exists(CONFIG_PATH):
+        return {}
+    try:
+        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception as e:
+        print(f"Error loading plaid config: {e}")
+        return {}
+
+
+def _apply_config_to_env(cfg):
+    """Pushes non-empty saved-config values into os.environ so the rest of the
+    module (which reads os.environ) picks them up — at import and after a save."""
+    for k in _CONFIG_ENV_KEYS:
+        v = cfg.get(k)
+        if v is not None and str(v).strip() != "":
+            os.environ[k] = str(v).strip()
+
+
+def _bootstrap_credentials():
+    """Load credentials at import: .env first (legacy), then the UI-saved
+    data/plaid_config.json on top so the in-app form always wins."""
+    try:
+        from dotenv import load_dotenv
+        # Load .env from the project root (one level above this core/ file).
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        load_dotenv(os.path.join(project_root, ".env"), override=True)
+    except Exception:
+        pass
+    _apply_config_to_env(_load_config_file())
+
+
+_bootstrap_credentials()
 
 # Master ledger column order, kept in sync with core/api.py.
 LEDGER_COLUMNS = [
@@ -64,9 +104,65 @@ def _save_items(items):
         os.replace(tmp, ITEMS_PATH)
 
 
-# --- Plaid client ---------------------------------------------------------------------
+# --- Credential configuration (UI-driven) --------------------------------------------
 def is_configured():
     return bool(os.environ.get("PLAID_CLIENT_ID") and os.environ.get("PLAID_SECRET"))
+
+
+def save_config(client_id, secret, env="production", redirect_uri=""):
+    """Persist Plaid credentials entered in the web UI and apply them live.
+
+    Writes data/plaid_config.json and updates os.environ in the running process,
+    so Plaid starts working immediately — the user never edits .env or restarts.
+    A blank `secret` keeps any previously saved secret (lets the user tweak the
+    environment or redirect URI without re-pasting it). Returns the public
+    (secret-free) config view.
+    """
+    client_id = (client_id or "").strip()
+    secret = (secret or "").strip()
+    env = (env or "production").strip().lower()
+    redirect_uri = (redirect_uri or "").strip()
+    if env not in ("production", "sandbox"):
+        env = "production"
+
+    cfg = _load_config_file()
+    cfg["PLAID_CLIENT_ID"] = client_id
+    if secret:
+        cfg["PLAID_SECRET"] = secret
+    cfg["PLAID_ENV"] = env
+    cfg["PLAID_REDIRECT_URI"] = redirect_uri
+
+    with _config_lock:
+        os.makedirs(DATA_ROOT, exist_ok=True)
+        tmp = CONFIG_PATH + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2)
+        os.replace(tmp, CONFIG_PATH)
+
+    _apply_config_to_env(cfg)
+    # A blanked redirect URI must actually be removed from the live env, since
+    # _apply_config_to_env only sets non-empty values.
+    if not redirect_uri:
+        os.environ.pop("PLAID_REDIRECT_URI", None)
+    return get_config_public()
+
+
+def get_config_public():
+    """Non-secret view of the active Plaid config, safe to send to the browser."""
+    cid = os.environ.get("PLAID_CLIENT_ID", "")
+    if len(cid) > 8:
+        masked = f"{cid[:4]}…{cid[-4:]}"
+    elif cid:
+        masked = "••••"
+    else:
+        masked = ""
+    return {
+        "configured": is_configured(),
+        "environment": (os.environ.get("PLAID_ENV") or "production").lower(),
+        "client_id_masked": masked,
+        "has_secret": bool(os.environ.get("PLAID_SECRET")),
+        "redirect_uri": os.environ.get("PLAID_REDIRECT_URI", ""),
+    }
 
 
 def _env_host():
